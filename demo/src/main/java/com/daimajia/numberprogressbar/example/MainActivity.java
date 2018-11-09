@@ -26,7 +26,6 @@ public class MainActivity extends ActionBarActivity implements OnProgressBarList
         setContentView(R.layout.activity_main);
         numberbar7 = (NumberProgressBar) findViewById(R.id.numberbar7);
         bnp = (NumberProgressBar)findViewById(R.id.numberbar1);
-        bnp.setOnProgressBarListener(this);
         timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -40,7 +39,8 @@ public class MainActivity extends ActionBarActivity implements OnProgressBarList
             }
         }, 1000, 100);
         numberbar7.setProgressText("测试");
-        numberbar7.setProgressAnimate(80);
+        numberbar7.setProgressAnimate(1000,0,80);
+        
         
     }
 

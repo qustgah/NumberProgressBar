@@ -1,23 +1,21 @@
 package com.daimajia.numberprogressbar;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.Transformation;
 
 import static com.daimajia.numberprogressbar.NumberProgressBar.ProgressTextVisibility.Invisible;
 import static com.daimajia.numberprogressbar.NumberProgressBar.ProgressTextVisibility.Visible;
+
 
 /**
  * Created by daimajia on 14-4-30.
@@ -134,7 +132,7 @@ public class NumberProgressBar extends View {
      * The Paint of the unreached area.
      */
     private Paint mUnreachedBarPaint;
-    
+
     private Paint mPanelPaint;
     /**
      * The Paint of the progress text.
@@ -165,10 +163,6 @@ public class NumberProgressBar extends View {
 
     private boolean mIfDrawText = true;
 
-    /**
-     * Listener
-     */
-    private OnProgressBarListener mListener;
 
     public enum ProgressTextVisibility {
         Visible, Invisible
@@ -189,8 +183,8 @@ public class NumberProgressBar extends View {
         this.progressText = progressText;
         postInvalidate();
     }
-    
-    
+
+
     public NumberProgressBar(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
@@ -282,8 +276,8 @@ public class NumberProgressBar extends View {
             canvas.drawRoundRect(mPanelRectF,progress_text_panel_corner,progress_text_panel_corner,mPanelPaint);
             canvas.drawText(mCurrentDrawText, mDrawTextStart, mDrawTextEnd, mTextPaint);
         }
-        
-        
+
+
     }
 
     private void initializePainters() {
@@ -337,8 +331,8 @@ public class NumberProgressBar extends View {
         mDrawTextEnd = (int) ((getHeight() / 2.0f) - ((mTextPaint.descent() + mTextPaint.ascent()) / 2.0f));
 
         if ((mDrawTextStart + mDrawTextWidth) >= getWidth() - getPaddingRight()) {
-            mDrawTextStart = getWidth() - getPaddingRight() - mDrawTextWidth;
-            mReachedRectF.right = mDrawTextStart - mOffset;
+            mDrawTextStart = getWidth() - getPaddingRight() - mDrawTextWidth - mOffset;
+            mReachedRectF.right = getWidth() - getPaddingRight();
         }
 
         float unreachedBarStart = mDrawTextStart + mDrawTextWidth - mOffset;
@@ -356,7 +350,7 @@ public class NumberProgressBar extends View {
         mPanelRectF.right = mDrawTextStart + mDrawTextWidth + mOffset;
         mPanelRectF.top = getHeight() / 2.0f - progress_text_panel_height / 2.0f;
         mPanelRectF.bottom = getHeight() / 2.0f + progress_text_panel_height / 2.0f;
-        
+
     }
 
     /**
@@ -468,10 +462,6 @@ public class NumberProgressBar extends View {
         if (by > 0) {
             setProgress(getProgress() + by);
         }
-
-        if(mListener != null){
-            mListener.onProgressChange(getProgress(), getMax());
-        }
     }
 
     public void setProgress(int progress) {
@@ -481,29 +471,10 @@ public class NumberProgressBar extends View {
         }
     }
 
-    ValueAnimator valueAnimator;
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public void setProgressAnimate(int progress) {
-        if (progress <= getMax() && progress >= 0) {
-            if (progress >= mCurrentProgress) {
-                if (valueAnimator != null && valueAnimator.isRunning()) {
-                    valueAnimator.cancel();
-                }
-                valueAnimator = ValueAnimator.ofInt(mCurrentProgress, progress);
-                valueAnimator.setTarget(this);
-                valueAnimator.setDuration(1000 * ((progress - mCurrentProgress) / getMax()));
-                valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        mCurrentProgress = (int) animation.getAnimatedValue();
-                        postInvalidate();
-                    }
-                });
-                valueAnimator.start();
-            }
-            invalidate();
-        }
+    public void setProgressAnimate(long duration,float from ,float to) {
+        ProgressBarAnimation anim = new ProgressBarAnimation(this, from, to);
+        anim.setDuration(duration);
+        startAnimation(anim);
     }
 
     @Override
@@ -540,7 +511,7 @@ public class NumberProgressBar extends View {
             progress_corner = bundle.getFloat(INSTANCE_PROGRESS_CORNER);
             progress_text_panel_corner = bundle.getFloat(INSTANCE_PROGRESS_TEXT_PANEL_CORNER);
             progress_text_panel_height = bundle.getFloat(INSTANCE_PROGRESS_TEXT_PANEL_HEIGHT);
-            
+
             initializePainters();
             setMax(bundle.getInt(INSTANCE_MAX));
             setProgress(bundle.getInt(INSTANCE_PROGRESS));
@@ -556,7 +527,7 @@ public class NumberProgressBar extends View {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        
+
     }
 
     public float dp2px(float dp) {
@@ -578,7 +549,27 @@ public class NumberProgressBar extends View {
         return mIfDrawText;
     }
 
-    public void setOnProgressBarListener(OnProgressBarListener listener){
-        mListener = listener;
+
+
+    public class ProgressBarAnimation extends Animation{
+        private NumberProgressBar progressBar;
+        private float from;
+        private float  to;
+
+        public ProgressBarAnimation(NumberProgressBar progressBar, float from, float to) {
+            super();
+            this.progressBar = progressBar;
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            super.applyTransformation(interpolatedTime, t);
+            float value = from + (to - from) * interpolatedTime;
+            progressBar.setProgress((int) value);
+        }
     }
+
+
 }
